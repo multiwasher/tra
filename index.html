@@ -629,7 +629,7 @@
                             </tr>
                         `;
                     });
-                    summary.push({ desc: g.description, unit: gTotal, total: gTotal * num });
+                    summary.push({ id: g.id, desc: g.description, unit: gTotal, total: gTotal * num });
                     const table = document.createElement('div');
                     table.className = 'mb-8 break-inside-avoid';
                     table.innerHTML = `
@@ -642,7 +642,7 @@
 
             if (summary.length > 0) {
                 let sRows = '';
-                summary.forEach((s, idx) => { sRows += `<tr><td class="text-center font-bold py-2">${idx + 1}</td><td class="font-bold">${s.desc}</td><td class="text-center">${Math.round(s.unit)}</td><td class="text-center font-black text-blue-700">${Math.round(s.total)}</td><td class="text-center">mm</td></tr>`; });
+                summary.forEach((s, idx) => { sRows += `<tr><td class="text-center font-bold py-2">${s.id}</td><td class="font-bold">${s.desc}</td><td class="text-center">${Math.round(s.unit)}</td><td class="text-center font-black text-blue-700">${Math.round(s.total)}</td><td class="text-center">mm</td></tr>`; });
                 summaryContainer.innerHTML = `<div class="mt-10 break-inside-avoid"><div class="border-b-2 border-slate-900 font-black text-sm mb-2 italic">RESUMO GERAL DE MATERIAL</div><table><thead><tr><th>#</th><th>Material</th><th>Unit. (mm)</th><th>Global (mm)</th><th>UN</th></tr></thead><tbody>${sRows}</tbody></table></div>`;
             } else summaryContainer.innerHTML = '';
         }
