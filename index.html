@@ -704,13 +704,16 @@
                 return;
             }
 
-            // 1. Prepara o relatório visualmente
+            // 1. Define o nome do ficheiro a gerar
+            document.title = `${projectData.code}_${projectData.title}_Folha de Corte`;
+
+            // 2. Prepara o relatório visualmente
             renderPrint(); 
             
-            // 2. Grava automaticamente na base de dados
+            // 3. Grava automaticamente na base de dados
             const gravado = await handleExportSheet();
             
-            // 3. Abre o diálogo de impressão
+            // 4. Abre o diálogo de impressão
             // Nota: Abrimos a impressão mesmo que a rede falhe para não parar a produção,
             // mas o utilizador já viu a notificação de erro da gravação se for o caso.
             window.print(); 
