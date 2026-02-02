@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Produção Somengil v2.0</title>
+    <link rel="icon" type="image/jpeg" href="https://static.wixstatic.com/media/a6967f_2bfbbafbdfde4da0b8cb9a2c1d3e4a1a~mv2.jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -575,6 +576,14 @@
                                 <span class="text-[10px] font-black uppercase text-slate-400">Total</span>
                                 <span id="total-g-${gIdx}" class="text-xl font-black text-slate-900 tracking-tight">${(gTotal/1000).toFixed(2)} m</span>
                             </div>
+                        </div>
+                        <div class="grid grid-cols-12 gap-3 mb-3 px-3">
+                            <div class="col-span-1"></div>
+                            <div class="col-span-2 text-xs font-black uppercase text-slate-400 text-center">Compr.</div>
+                            <div class="col-span-2 text-xs font-black uppercase text-slate-400 text-center">Quant.</div>
+                            <div class="col-span-2 text-xs font-black uppercase text-slate-400 text-center">Cortes</div>
+                            <div class="col-span-4 text-xs font-black uppercase text-slate-400 text-center">Obs.</div>
+                            <div class="col-span-1"></div>
                         </div>
                         <div class="space-y-3">${itemsHtml}</div>
                         <button onclick="addItem(${gIdx})" class="w-full mt-6 py-4 border-2 border-dashed border-slate-200 text-slate-400 rounded-2xl hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95">
