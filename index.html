@@ -316,8 +316,8 @@
                     description: 'Tubo Quadrado AISI 304 25x25x1,5 mm',
                     isCustom: false,
                     items: [
-                        { subId: 'a1', comp: 1250, quant: 4, cuts: '45/45', obs: 'Pilares' },
-                        { subId: 'a2', comp: 600, quant: 4, cuts: '90/90', obs: 'Travessas' }
+                        { comp: 1250, quant: 4, cuts: '45/45', obs: 'Pilares' },
+                        { comp: 600, quant: 4, cuts: '90/90', obs: 'Travessas' }
                     ]
                 }
             ]
@@ -504,8 +504,7 @@
 
         function addItem(gIdx) {
             const g = projectData.groups[gIdx];
-            const subId = g.id.toLowerCase() + (g.items.length + 1);
-            g.items.push({ subId, comp: '', quant: '', cuts: '', obs: '', unit: 'mm' });
+            g.items.push({ comp: '', quant: '', cuts: '', obs: '', unit: 'mm' });
             render();
         }
 
@@ -544,7 +543,7 @@
                         gTotal += (parseFloat(it.comp) || 0) * (parseFloat(it.quant) || 0);
                         itemsHtml += `
                             <div class="grid grid-cols-12 gap-3 items-center bg-slate-50 p-3 rounded-2xl border border-slate-100 group/item">
-                                <div class="col-span-1 text-center font-black text-slate-300 text-xs">${it.subId}</div>
+                                <div class="col-span-1 text-center font-black text-slate-300 text-xs">${iIdx + 1}</div>
                                 <div class="col-span-2"><input type="number" value="${it.comp}" oninput="updateItem(${gIdx}, ${iIdx}, 'comp', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
                                 <div class="col-span-2"><input type="number" value="${it.quant}" oninput="updateItem(${gIdx}, ${iIdx}, 'quant', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
                                 <div class="col-span-2"><input type="text" value="${it.cuts}" oninput="updateItem(${gIdx}, ${iIdx}, 'cuts', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
@@ -612,13 +611,13 @@
                     if (g.items.length === 0) return;
                     let gTotal = 0;
                     let rows = '';
-                    g.items.forEach(it => {
+                    g.items.forEach((it, idx) => {
                         const q = parseFloat(it.quant) || 0;
                         const c = parseFloat(it.comp) || 0;
                         gTotal += (q * c);
                         rows += `
                             <tr class="striped-row">
-                                <td class="text-center font-bold text-slate-400 italic">${it.subId}</td>
+                                <td class="text-center font-bold text-slate-400 italic">${idx + 1}</td>
                                 <td class="font-medium text-[9px]">${g.description}</td>
                                 <td class="text-center font-bold">${it.comp}</td>
                                 <td class="text-center">${it.quant}</td>
@@ -718,7 +717,7 @@
 
         function handleDownloadOnly() {
             let csv = "\uFEFFData;Código;Título;Trolleys;Grupo;Mat;ID;Comp;Quant;Total;Cortes;Obs\n";
-            projectData.groups.forEach(g => { g.items.forEach(it => { const row = [new Date().toLocaleDateString(), projectData.code, projectData.title, projectData.numTrolleys, g.id, g.description, it.subId, it.comp, it.quant, (it.comp * it.quant * projectData.numTrolleys), it.cuts, it.obs]; csv += row.join(";") + "\n"; }); });
+            projectData.groups.forEach(g => { g.items.forEach((it, idx) => { const row = [new Date().toLocaleDateString(), projectData.code, projectData.title, projectData.numTrolleys, g.id, g.description, idx + 1, it.comp, it.quant, (it.comp * it.quant * projectData.numTrolleys), it.cuts, it.obs]; csv += row.join(";") + "\n"; }); });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
@@ -795,9 +794,9 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
-                                        ${(grupo.itens || []).map(it => `
+                                        ${(grupo.itens || []).map((it, idx) => `
                                             <tr class="hover:bg-slate-50">
-                                                <td class="px-3 py-2 font-bold text-slate-700">${it.subId || '---'}</td>
+                                                <td class="px-3 py-2 font-bold text-slate-700">${idx + 1}</td>
                                                 <td class="px-3 py-2 text-center font-mono text-slate-600">${it.comp || '---'}</td>
                                                 <td class="px-3 py-2 text-center font-mono text-slate-600">${it.quant || '---'}</td>
                                                 <td class="px-3 py-2 text-center text-slate-600">${it.cuts || '---'}</td>
