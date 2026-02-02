@@ -475,6 +475,7 @@
                 code: r.codigo || '', title: r.titulo || '', numTrolleys: parseInt(r.num_trolleys) || 1,
                 groups: (r.materiais || []).map((g, i) => ({ id: g.grupo || String.fromCharCode(65 + i), description: g.descricao || '', items: (g.itens || []).map(it => ({ ...it, unit: 'mm' })) }))
             };
+            document.title = `${projectData.code}_${projectData.title}_Folha de Corte`;
             renderPrint();
             window.print();
             projectData = original;
