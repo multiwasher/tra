@@ -544,7 +544,7 @@
                         gTotal += (parseFloat(it.comp) || 0) * (parseFloat(it.quant) || 0);
                         itemsHtml += `
                             <div class="grid grid-cols-12 gap-3 items-center bg-slate-50 p-3 rounded-2xl border border-slate-100 group/item">
-                                <div class="col-span-1 text-center font-black text-slate-300 text-xs">${it.lineNumber}</div>
+                                <div class="col-span-1"><input type="number" value="${it.lineNumber}" oninput="updateItem(${gIdx}, ${iIdx}, 'lineNumber', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-center outline-none focus:border-blue-500"></div>
                                 <div class="col-span-2"><input type="number" value="${it.comp}" oninput="updateItem(${gIdx}, ${iIdx}, 'comp', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
                                 <div class="col-span-2"><input type="number" value="${it.quant}" oninput="updateItem(${gIdx}, ${iIdx}, 'quant', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
                                 <div class="col-span-2"><input type="text" value="${it.cuts}" oninput="updateItem(${gIdx}, ${iIdx}, 'cuts', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
