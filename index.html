@@ -440,7 +440,6 @@
                         <button onclick="viewFromDB(${idx}); event.stopPropagation();" class="p-2 bg-slate-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Visualizar"><i data-lucide="eye" class="w-4 h-4"></i></button>
                         <button onclick="loadFromDB(${idx}); event.stopPropagation();" class="p-2 bg-blue-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Editar"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
                         <button onclick="deleteFromDB(${idx}); event.stopPropagation();" class="p-2 bg-red-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Apagar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        <button onclick="printFromDB(${idx}); event.stopPropagation();" class="p-2 bg-slate-100 text-slate-600 rounded-lg hover:scale-110 transition-transform" title="Imprimir"><i data-lucide="printer" class="w-4 h-4"></i></button>
                     </td>
                 `;
                 tr.onclick = () => loadFromDB(idx);
