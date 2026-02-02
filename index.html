@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Produção Somengil v2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --brand-blue: #0089BA;
+            --brand-light: #51B8EA;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, rgba(81, 184, 234, 1) 0%, rgba(0, 0, 0, 1) 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .active-tab {
+            background-color: var(--brand-blue) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(0, 137, 186, 0.3);
+        }
+
+        /* Estilos de Impressão */
+        @media print {
+            @page { size: A4; margin: 10mm 15mm; }
+            body { background: white !important; font-size: 10pt; }
+            .print-hidden { display: none !important; }
+            .print-block { display: block !important; }
+            .striped-row:nth-child(even) { background-color: #f8fafc !important; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { text-align: left; padding: 8px 4px; border-bottom: 2px solid var(--brand-blue); font-size: 9px; text-transform: uppercase; color: #334155; }
+            td { padding: 6px 4px; border-bottom: 1px solid #e2e8f0; font-size: 10px; }
+            .corner-img-tl { position: absolute; top: 0; left: 0; height: 45px; }
+            .corner-img-tr { position: absolute; top: 0; right: 0; height: 50px; }
+            .corner-img-br { position: fixed; bottom: 0; right: 0; height: 35px; }
+            .header-spacer { height: 60px; }
+            .project-header { border-bottom: 2px solid var(--brand-blue); padding-bottom: 8px; margin-bottom: 20px; }
+            .break-inside-avoid { break-inside: avoid; }
+        }
+
+        #notification {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: translateY(100px);
+            opacity: 0;
+        }
+        #notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--brand-blue);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        input::placeholder {
+            font-weight: 400;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Notificação -->
+    <div id="notification" class="fixed bottom-6 right-6 z-[200] flex items-center gap-4 bg-white border border-slate-200 p-4 rounded-2xl shadow-2xl pointer-events-none">
+        <div id="notif-icon" class="p-2.5 rounded-xl"></div>
+        <div>
+            <p id="notif-title" class="font-bold text-sm text-slate-900"></p>
+            <p id="notif-message" class="text-xs text-slate-500"></p>
+        </div>
+    </div>
+
+    <!-- Modal Confirmação -->
+    <div id="clear-modal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 scale-95 opacity-0 transition-all duration-300" id="clear-modal-body">
+            <div class="flex items-center gap-4 text-amber-500 mb-6">
+                <div class="p-4 bg-amber-50 rounded-2xl">
+                    <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-extrabold text-slate-900 leading-tight">Limpar Dados?</h3>
+                    <p class="text-slate-500 text-sm mt-1">Esta ação é irreversível.</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-8">
+                <button onclick="hideClearModal()" class="px-6 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">Cancelar</button>
+                <button onclick="confirmClear()" class="px-6 py-2.5 text-sm font-bold bg-red-600 text-white hover:bg-red-700 rounded-xl transition-all shadow-lg active:scale-95">Sim, Limpar Tudo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Visualização de Dados -->
+    <div id="view-modal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl scale-95 opacity-0 transition-all duration-300 max-h-[80vh] overflow-y-auto" id="view-modal-body">
+            <div class="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+                <div>
+                    <h3 class="text-2xl font-extrabold text-slate-900">Detalhes do Projeto</h3>
+                    <p class="text-slate-500 text-sm mt-1" id="view-modal-code">---</p>
+                </div>
+                <button onclick="hideViewModal()" class="p-2 text-slate-400 hover:text-slate-600 transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="view-modal-content" class="p-6 space-y-6">
+                <!-- Conteúdo dinâmico será inserido aqui -->
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVEGAÇÃO -->
+    <nav class="print-hidden max-w-5xl mx-auto pt-8 px-6">
+        <div class="flex bg-white/20 backdrop-blur-md p-1.5 rounded-2xl border border-white/30 shadow-sm gap-2">
+            <button onclick="switchView('editor')" id="nav-editor" class="flex-1 py-3.5 px-6 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active-tab">
+                <i data-lucide="pencil-ruler" class="w-4 h-4"></i> Editor de Corte
+            </button>
+            <button onclick="switchView('database')" id="nav-database" class="flex-1 py-3.5 px-6 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-white hover:bg-white/10">
+                <i data-lucide="database" class="w-4 h-4"></i> Base de Dados
+            </button>
+        </div>
+    </nav>
+
+    <!-- VIEW EDITOR -->
+    <main id="view-editor" class="print-hidden max-w-5xl mx-auto p-6 space-y-8 pb-32">
+        <header class="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+            <div class="flex items-center gap-5">
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <img src="https://static.wixstatic.com/media/a6967f_eee0d017524f4a48bf2870cc2385c10b~mv2.png" alt="Logo" class="h-10">
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black text-slate-900 tracking-tight leading-none">Gestão de Fabrico</h1>
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Manufacturing System</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                <button onclick="showClearModal()" class="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Limpar tudo">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+                <button onclick="handleDownloadOnly()" class="flex items-center gap-2 px-4 py-3 bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-xl font-bold text-sm border border-slate-200">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> CSV
+                </button>
+                <button onclick="handleExportSheet()" id="btn-save" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-emerald-200 active:scale-95">
+                    <i data-lucide="cloud-upload" class="w-5 h-5"></i> Gravar na BD
+                </button>
+                <button onclick="handlePrint()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-slate-200 active:scale-95">
+                    <i data-lucide="printer" class="w-5 h-5"></i> Imprimir
+                </button>
+            </div>
+        </header>
+
+        <!-- Informação do Projeto -->
+        <section class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div class="md:col-span-10 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="space-y-2 md:col-span-1">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Cód. Projeto</label>
+                        <input id="input-code" type="text" placeholder="Ex: TRA759" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none uppercase font-mono font-bold text-lg transition-all">
+                    </div>
+                    <div class="space-y-2 md:col-span-3">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Título do Trolley</label>
+                        <input id="input-title" type="text" placeholder="Nome da estrutura..." class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 focus:border-blue-500 outline-none font-bold text-lg md:text-xl transition-all">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Quantidade -->
+            <div class="md:col-span-2 bg-blue-600 p-6 rounded-3xl shadow-xl shadow-blue-100 flex flex-col justify-center items-center text-white relative overflow-hidden group">
+                <i data-lucide="layers" class="absolute -right-4 -bottom-4 w-20 h-20 opacity-10"></i>
+                <label class="text-[9px] font-black uppercase tracking-widest opacity-80 mb-2 text-center">Qtd. Trolleys</label>
+                <div class="flex items-center gap-2 z-10">
+                    <button onclick="adjustTrolleys(-1)" class="p-1 hover:bg-white/20 rounded-lg transition-colors" title="Remover">
+                        <i data-lucide="minus-circle" class="w-5 h-5"></i>
+                    </button>
+                    <input id="input-num" type="number" min="1" class="bg-transparent text-3xl font-black w-12 text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" value="1">
+                    <button onclick="adjustTrolleys(1)" class="p-1 hover:bg-white/20 rounded-lg transition-colors" title="Adicionar">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Lista de Grupos -->
+        <section class="space-y-6">
+            <div class="flex justify-between items-center px-2">
+                <h2 class="text-xl font-black flex items-center gap-3 text-white">
+                    <span class="w-2 h-8 bg-blue-600 rounded-full"></span>
+                    LISTA DE CORTE
+                </h2>
+                <button onclick="addGroup()" class="flex items-center gap-2 bg-white text-blue-600 border-2 border-blue-50 hover:bg-blue-50 px-5 py-2.5 rounded-xl font-black text-sm transition-all shadow-md active:scale-95">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Grupo
+                </button>
+            </div>
+
+            <div id="groups-container" class="space-y-10">
+                <!-- Grupos inseridos via JS -->
+            </div>
+
+            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-24 bg-white/10 backdrop-blur-md border-4 border-dashed border-white/20 rounded-[40px] text-white/50">
+                <div class="p-6 bg-white/10 rounded-full mb-4">
+                    <i data-lucide="clipboard-list" class="w-12 h-12 opacity-30"></i>
+                </div>
+                <p class="font-bold text-white text-lg">Nenhum grupo definido</p>
+                <p class="text-sm opacity-60 mb-6 text-center max-w-xs">Adicione o primeiro grupo de materiais para começar a preencher a folha de corte.</p>
+                <button onclick="addGroup()" class="bg-white text-slate-900 px-10 py-4 rounded-2xl font-black hover:scale-105 transition-all shadow-xl">Criar Primeiro Grupo</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- VIEW DATABASE -->
+    <main id="view-database" class="print-hidden hidden max-w-6xl mx-auto p-6 space-y-6 pb-32">
+        <header class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-5">
+                <div class="p-4 bg-blue-50 rounded-2xl text-blue-600">
+                    <i data-lucide="archive" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900">Histórico Cloud</h2>
+                    <p class="text-slate-500 text-sm">Registos armazenados no sistema Somengil</p>
+                </div>
+            </div>
+            <div class="flex gap-3 w-full md:w-auto">
+                <div class="relative flex-1 md:w-80">
+                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="text" id="db-search" placeholder="Procurar projeto..." oninput="filterDatabase()" class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 transition-all">
+                </div>
+                <button onclick="fetchDatabaseData()" class="p-3.5 bg-slate-900 text-white rounded-2xl shadow-lg hover:bg-black transition-colors" title="Atualizar dados">
+                    <i data-lucide="refresh-cw" class="w-5 h-5" id="refresh-icon"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left" id="db-table">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Código</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Projeto</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Trolleys</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="db-body" class="divide-y divide-slate-50 text-sm font-medium text-slate-600"></tbody>
+                </table>
+            </div>
+            <div id="db-loader" class="hidden flex flex-col items-center justify-center py-24 text-slate-400">
+                <div class="loader mb-4"></div>
+                <p class="font-bold">A aceder à Nuvem Somengil...</p>
+            </div>
+            <div id="db-empty" class="hidden flex flex-col items-center justify-center py-24 text-slate-400">
+                <i data-lucide="ghost" class="w-16 h-16 mb-4 opacity-20"></i>
+                <p class="font-bold">Sem registos encontrados</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- PRINT SHEET -->
+    <div id="print-sheet" class="hidden print-block bg-white w-full mx-auto relative min-h-screen">
+        <img src="https://static.wixstatic.com/media/a6967f_eee0d017524f4a48bf2870cc2385c10b~mv2.png" class="corner-img-tl">
+        <img src="https://static.wixstatic.com/media/a6967f_d83f45c5e4f446009fcfd984d5d85f6f~mv2.png" class="corner-img-tr">
+        <img src="https://static.wixstatic.com/media/a6967f_0db968f0a9864debae3bd716ad0ebeb6~mv2.png" class="corner-img-br">
+        <div class="header-spacer"></div>
+        <div id="print-code-large" class="text-center font-black text-5xl tracking-tighter mb-4 text-slate-900 italic"></div>
+        <div class="project-header border-b-2 border-slate-900 pb-2 mb-6 flex justify-between items-end">
+            <h2 id="print-full-title" class="font-black text-2xl uppercase text-slate-900"></h2>
+            <div class="flex flex-col items-end">
+                <span class="font-bold text-[9px] uppercase text-slate-500 tracking-widest leading-none">Nº ESTRUTURAS:</span>
+                <span id="print-num-trolleys" class="text-4xl font-black leading-none text-blue-600"></span>
+            </div>
+        </div>
+        <div id="print-tables-container"></div>
+        <div id="print-summary-container"></div>
+        <footer class="mt-12 pt-6 text-[9px] text-slate-400 text-center uppercase tracking-[0.3em] border-t border-slate-100">
+            Confidencial Somengil &copy; <span id="print-year"></span> - Instruções Técnicas de Corte
+        </footer>
+    </div>
+
+    <script>
+        const MATERIAL_OPTIONS = [
+            "Tubo Quadrado AISI 304 25x25x1,5 mm",
+            "Varão redondo AISI 304 ø8 mm",
+            "Varão Quadrado 20x20",
+            "Chapa AISI 304 1.5 mm",
+            "Cantoneira AISI 304 25x25x3 mm",
+            "Tubo Redondo AISI 304 ø25x1.5 mm"
+        ];
+
+        // URL ATUALIZADO DO GOOGLE APPS SCRIPT
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXROvlJIHgkoKBveKlzeFDnBAb49o4YuE_wSdkM18Z32KG4o7Ff6qxylTU7RQrHT9Mig/exec';
+        const TARGET_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/1hT4t2gAxCAvziUJXxbgMcCOLCF0Extm1';
+
+        let projectData = {
+            code: 'TRA759',
+            title: 'TROLLEY CAIXAS 600X500',
+            numTrolleys: 2,
+            groups: [
+                {
+                    id: 'A',
+                    description: 'Tubo Quadrado AISI 304 25x25x1,5 mm',
+                    isCustom: false,
+                    items: [
+                        { subId: 'a1', comp: 1250, quant: 4, cuts: '45/45', obs: 'Pilares' },
+                        { subId: 'a2', comp: 600, quant: 4, cuts: '90/90', obs: 'Travessas' }
+                    ]
+                }
+            ]
+        };
+
+        let dbRecords = [];
+
+        function init() {
+            updateInputFields();
+            
+            document.getElementById('input-code').addEventListener('input', (e) => { 
+                projectData.code = e.target.value.toUpperCase(); 
+                renderPrint(); 
+            });
+            document.getElementById('input-title').addEventListener('input', (e) => { 
+                projectData.title = e.target.value; 
+                renderPrint(); 
+            });
+            document.getElementById('input-num').addEventListener('change', (e) => { 
+                projectData.numTrolleys = parseInt(e.target.value) || 1; 
+                render(); 
+            });
+
+            // Event listener para fechar modal ao clicar fora
+            document.getElementById('view-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'view-modal') hideViewModal();
+            });
+
+            document.getElementById('clear-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'clear-modal') hideClearModal();
+            });
+
+            document.getElementById('print-year').innerText = new Date().getFullYear();
+            render();
+        }
+
+        function updateInputFields() {
+            document.getElementById('input-code').value = projectData.code;
+            document.getElementById('input-title').value = projectData.title;
+            document.getElementById('input-num').value = projectData.numTrolleys;
+        }
+
+        function adjustTrolleys(val) {
+            let current = parseInt(projectData.numTrolleys);
+            if (isNaN(current)) current = 1;
+            
+            projectData.numTrolleys = Math.max(1, current + val);
+            document.getElementById('input-num').value = projectData.numTrolleys;
+            render();
+        }
+
+        function switchView(view) {
+            const editor = document.getElementById('view-editor');
+            const database = document.getElementById('view-database');
+            const navE = document.getElementById('nav-editor');
+            const navD = document.getElementById('nav-database');
+
+            if (view === 'editor') {
+                editor.classList.remove('hidden');
+                database.classList.add('hidden');
+                navE.classList.add('active-tab');
+                navD.classList.remove('active-tab');
+                navD.classList.add('text-white');
+            } else {
+                editor.classList.add('hidden');
+                database.classList.remove('hidden');
+                navE.classList.remove('active-tab');
+                navD.classList.add('active-tab');
+                navD.classList.remove('text-white');
+                fetchDatabaseData();
+            }
+            lucide.createIcons();
+        }
+
+        function getListJSONP() {
+            return new Promise((resolve, reject) => {
+                const callbackName = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+                window[callbackName] = (data) => { cleanup(); resolve(data); };
+                const script = document.createElement("script");
+                script.src = `${GOOGLE_SCRIPT_URL}?action=getList&callback=${callbackName}&_=${Date.now()}`;
+                script.onerror = () => { cleanup(); reject(new Error("Falha JSONP")); };
+                document.body.appendChild(script);
+                function cleanup() {
+                    try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                }
+                setTimeout(() => { if (window[callbackName]) { cleanup(); reject(new Error("Timeout")); } }, 15000);
+            });
+        }
+
+        async function fetchDatabaseData() {
+            const loader = document.getElementById('db-loader');
+            const icon = document.getElementById('refresh-icon');
+            loader.classList.remove('hidden');
+            icon.classList.add('animate-spin');
+            try {
+                const data = await getListJSONP();
+                dbRecords = Array.isArray(data) ? data : [];
+                renderDatabase(dbRecords);
+            } catch (err) {
+                showNotification('Erro', 'Não foi possível ler os dados.', 'error');
+            } finally {
+                loader.classList.add('hidden');
+                icon.classList.remove('animate-spin');
+            }
+        }
+
+        function renderDatabase(data) {
+            const body = document.getElementById('db-body');
+            body.innerHTML = '';
+            data.forEach((rec, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-blue-50/30 transition-colors group cursor-pointer';
+                tr.innerHTML = `
+                    <td class="px-8 py-5 text-slate-400 font-mono text-xs">${rec.data_registo || '---'}</td>
+                    <td class="px-8 py-5 font-black text-slate-900 uppercase">${rec.codigo || '---'}</td>
+                    <td class="px-8 py-5 font-bold text-slate-600">${rec.titulo || 'N/A'}</td>
+                    <td class="px-8 py-5 text-center font-black text-blue-600">${rec.num_trolleys || 0}</td>
+                    <td class="px-8 py-5 flex justify-center gap-2">
+                        <button onclick="viewFromDB(${idx}); event.stopPropagation();" class="p-2 bg-slate-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Visualizar"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                        <button onclick="loadFromDB(${idx}); event.stopPropagation();" class="p-2 bg-blue-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Editar"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                        <button onclick="deleteFromDB(${idx}); event.stopPropagation();" class="p-2 bg-red-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Apagar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <button onclick="printFromDB(${idx}); event.stopPropagation();" class="p-2 bg-slate-100 text-slate-600 rounded-lg hover:scale-110 transition-transform" title="Imprimir"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                    </td>
+                `;
+                tr.onclick = () => loadFromDB(idx);
+                body.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        function loadFromDB(idx) {
+            const r = dbRecords[idx];
+            projectData = {
+                code: r.codigo || '', 
+                title: r.titulo || '', 
+                numTrolleys: parseInt(r.num_trolleys) || 1,
+                groups: (r.materiais || []).map((g, i) => ({
+                    id: g.grupo || String.fromCharCode(65 + i),
+                    description: g.descricao || '',
+                    isCustom: !MATERIAL_OPTIONS.includes(g.descricao),
+                    items: (g.itens || []).map(it => ({ ...it, unit: 'mm' }))
+                }))
+            };
+            updateInputFields();
+            render();
+            switchView('editor');
+            showNotification('Projeto Carregado', 'Edite e grave para atualizar na BD.', 'success');
+        }
+
+        function printFromDB(idx) {
+            const r = dbRecords[idx];
+            const original = JSON.parse(JSON.stringify(projectData));
+            projectData = {
+                code: r.codigo || '', title: r.titulo || '', numTrolleys: parseInt(r.num_trolleys) || 1,
+                groups: (r.materiais || []).map((g, i) => ({ id: g.grupo || String.fromCharCode(65 + i), description: g.descricao || '', items: (g.itens || []).map(it => ({ ...it, unit: 'mm' })) }))
+            };
+            renderPrint();
+            window.print();
+            projectData = original;
+            renderPrint();
+        }
+
+        function addGroup() {
+            if (!projectData.groups) projectData.groups = [];
+            const nextChar = String.fromCharCode(65 + projectData.groups.length);
+            projectData.groups.push({ id: nextChar, description: '', isCustom: false, items: [] });
+            render();
+            showNotification('Grupo Adicionado', 'Configure o tipo de material no novo grupo.', 'success');
+        }
+
+        function removeGroup(gIdx) {
+            projectData.groups.splice(gIdx, 1);
+            projectData.groups.forEach((g, i) => g.id = String.fromCharCode(65 + i));
+            render();
+        }
+
+        function handleMatSelect(gIdx, val) {
+            const g = projectData.groups[gIdx];
+            if (val === "custom") { g.isCustom = true; g.description = ""; }
+            else { g.isCustom = false; g.description = val; }
+            render();
+        }
+
+        function addItem(gIdx) {
+            const g = projectData.groups[gIdx];
+            const subId = g.id.toLowerCase() + (g.items.length + 1);
+            g.items.push({ subId, comp: '', quant: '', cuts: '', obs: '', unit: 'mm' });
+            render();
+        }
+
+        function removeItem(gIdx, iIdx) {
+            projectData.groups[gIdx].items.splice(iIdx, 1);
+            render();
+        }
+
+        function updateItem(gIdx, iIdx, field, val) {
+            projectData.groups[gIdx].items[iIdx][field] = val;
+            renderPrint();
+            updateLiveTotal(gIdx);
+        }
+
+        function updateLiveTotal(gIdx) {
+            const g = projectData.groups[gIdx];
+            let total = 0;
+            g.items.forEach(i => total += (parseFloat(i.comp) || 0) * (parseFloat(i.quant) || 0));
+            const el = document.getElementById(`total-g-${gIdx}`);
+            if (el) el.innerText = (total / 1000).toFixed(2) + ' m';
+        }
+
+        function render() {
+            const container = document.getElementById('groups-container');
+            const empty = document.getElementById('empty-state');
+            container.innerHTML = '';
+            
+            if (!projectData.groups || projectData.groups.length === 0) {
+                empty.classList.remove('hidden');
+            } else {
+                empty.classList.add('hidden');
+                projectData.groups.forEach((g, gIdx) => {
+                    let itemsHtml = '';
+                    let gTotal = 0;
+                    g.items.forEach((it, iIdx) => {
+                        gTotal += (parseFloat(it.comp) || 0) * (parseFloat(it.quant) || 0);
+                        itemsHtml += `
+                            <div class="grid grid-cols-12 gap-3 items-center bg-slate-50 p-3 rounded-2xl border border-slate-100 group/item">
+                                <div class="col-span-1 text-center font-black text-slate-300 text-xs">${it.subId}</div>
+                                <div class="col-span-2"><input type="number" value="${it.comp}" oninput="updateItem(${gIdx}, ${iIdx}, 'comp', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
+                                <div class="col-span-2"><input type="number" value="${it.quant}" oninput="updateItem(${gIdx}, ${iIdx}, 'quant', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
+                                <div class="col-span-2"><input type="text" value="${it.cuts}" oninput="updateItem(${gIdx}, ${iIdx}, 'cuts', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
+                                <div class="col-span-4"><input type="text" value="${it.obs}" oninput="updateItem(${gIdx}, ${iIdx}, 'obs', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="Nota..."></div>
+                                <div class="col-span-1 flex justify-center"><button onclick="removeItem(${gIdx}, ${iIdx})" class="text-slate-300 hover:text-red-500 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+                            </div>
+                        `;
+                    });
+
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-[32px] p-6 md:p-8 border border-slate-200 shadow-sm relative animate-in fade-in slide-in-from-bottom-2 duration-300';
+                    card.innerHTML = `
+                        <button onclick="removeGroup(${gIdx})" class="absolute -top-3 -right-3 p-2.5 bg-red-50 text-red-500 rounded-full border border-red-100 hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                            <div class="flex items-center gap-5 flex-1">
+                                <div class="bg-blue-600 text-white w-12 h-12 flex items-center justify-center rounded-2xl font-black shadow-lg shadow-blue-100">${g.id}</div>
+                                <div class="flex-1 space-y-2">
+                                    <select onchange="handleMatSelect(${gIdx}, this.value)" class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:border-blue-500 transition-all">
+                                        <option value="" disabled ${!g.description ? 'selected' : ''}>Tipo de Material...</option>
+                                        ${MATERIAL_OPTIONS.map(opt => `<option value="${opt}" ${g.description === opt && !g.isCustom ? 'selected' : ''}>${opt}</option>`).join('')}
+                                        <option value="custom" ${g.isCustom ? 'selected' : ''}>Outro material (Manual)...</option>
+                                    </select>
+                                    ${g.isCustom ? `<input type="text" placeholder="Escreva a descrição do material..." value="${g.description}" oninput="projectData.groups[${gIdx}].description = this.value; renderPrint();" class="w-full border-b-2 border-blue-600 outline-none py-2 text-lg font-black bg-transparent">` : ''}
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 min-w-[140px] justify-center">
+                                <span class="text-[10px] font-black uppercase text-slate-400">Total</span>
+                                <span id="total-g-${gIdx}" class="text-xl font-black text-slate-900 tracking-tight">${(gTotal/1000).toFixed(2)} m</span>
+                            </div>
+                        </div>
+                        <div class="space-y-3">${itemsHtml}</div>
+                        <button onclick="addItem(${gIdx})" class="w-full mt-6 py-4 border-2 border-dashed border-slate-200 text-slate-400 rounded-2xl hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-all font-black text-sm flex items-center justify-center gap-2 active:scale-95">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Peça
+                        </button>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+            renderPrint();
+            lucide.createIcons();
+        }
+
+        function renderPrint() {
+            const num = parseInt(projectData.numTrolleys) || 1;
+            document.getElementById('print-code-large').innerText = projectData.code || 'DOC-CORTE';
+            document.getElementById('print-full-title').innerText = (projectData.code || '') + " " + (projectData.title || 'PROJETO');
+            document.getElementById('print-num-trolleys').innerText = num;
+            const container = document.getElementById('print-tables-container');
+            const summaryContainer = document.getElementById('print-summary-container');
+            container.innerHTML = '';
+            const summary = [];
+
+            if (projectData.groups) {
+                projectData.groups.forEach(g => {
+                    if (g.items.length === 0) return;
+                    let gTotal = 0;
+                    let rows = '';
+                    g.items.forEach(it => {
+                        const q = parseFloat(it.quant) || 0;
+                        const c = parseFloat(it.comp) || 0;
+                        gTotal += (q * c);
+                        rows += `
+                            <tr class="striped-row">
+                                <td class="text-center font-bold text-slate-400 italic">${it.subId}</td>
+                                <td class="font-medium text-[9px]">${g.description}</td>
+                                <td class="text-center font-bold">${it.comp}</td>
+                                <td class="text-center">${it.quant}</td>
+                                <td class="text-center font-black text-blue-700">${q * num}</td>
+                                <td class="text-center text-slate-400">mm</td>
+                                <td class="text-center font-bold text-slate-800">${it.cuts}</td>
+                                <td class="text-[8px] italic text-slate-500 leading-tight">${it.obs}</td>
+                            </tr>
+                        `;
+                    });
+                    summary.push({ desc: g.description, unit: gTotal, total: gTotal * num });
+                    const table = document.createElement('div');
+                    table.className = 'mb-8 break-inside-avoid';
+                    table.innerHTML = `
+                        <div class="bg-slate-100 p-2 mb-1 border-l-4 border-blue-600 font-black text-xs uppercase">${g.id} - ${g.description}</div>
+                        <table><thead><tr><th>ID</th><th>Material</th><th>Comp.</th><th>Q/U</th><th>TOTAL</th><th>UN</th><th>Cortes</th><th>Obs.</th></tr></thead><tbody>${rows}</tbody></table>
+                    `;
+                    container.appendChild(table);
+                });
+            }
+
+            if (summary.length > 0) {
+                let sRows = '';
+                summary.forEach((s, idx) => { sRows += `<tr><td class="text-center font-bold py-2">${idx + 1}</td><td class="font-bold">${s.desc}</td><td class="text-center">${Math.round(s.unit)}</td><td class="text-center font-black text-blue-700">${Math.round(s.total)}</td><td class="text-center">mm</td></tr>`; });
+                summaryContainer.innerHTML = `<div class="mt-10 break-inside-avoid"><div class="border-b-2 border-slate-900 font-black text-sm mb-2 italic">RESUMO GERAL DE MATERIAL</div><table><thead><tr><th>#</th><th>Material</th><th>Unit. (mm)</th><th>Global (mm)</th><th>UN</th></tr></thead><tbody>${sRows}</tbody></table></div>`;
+            } else summaryContainer.innerHTML = '';
+        }
+
+        /**
+         * Grava os dados na BD
+         */
+        async function handleExportSheet() {
+            const btn = document.getElementById('btn-save');
+            const original = btn.innerHTML;
+
+            if (!projectData.code || projectData.code.trim() === "") {
+                showNotification('Erro', 'O Cód. Projeto é obrigatório para gravar.', 'error');
+                return false;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5"></i> A processar...';
+                lucide.createIcons();
+
+                const payload = { 
+                    action: 'upsert', 
+                    data_registo: new Date().toLocaleString('pt-PT'), 
+                    codigo: projectData.code, 
+                    titulo: projectData.title, 
+                    num_trolleys: projectData.numTrolleys, 
+                    materiais: projectData.groups.map(g => ({ 
+                        grupo: g.id, 
+                        descricao: g.description, 
+                        itens: g.items 
+                    })) 
+                };
+
+                await fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    body: JSON.stringify(payload) 
+                });
+
+                showNotification('Gravado com Sucesso', `O projeto ${projectData.code} foi guardado na nuvem.`, 'success');
+                return true;
+            } catch (err) { 
+                showNotification('Erro na Ligação', 'Falha ao comunicar com o servidor.', 'error'); 
+                return false;
+            } finally { 
+                btn.disabled = false; 
+                btn.innerHTML = original; 
+                lucide.createIcons(); 
+            }
+        }
+
+        /**
+         * Grava na BD E DEPOIS abre a janela de impressão
+         */
+        async function handlePrint() { 
+            if (!projectData.code || projectData.code.trim() === "") {
+                showNotification('Erro', 'O Cód. Projeto é obrigatório para imprimir e gravar.', 'error');
+                return;
+            }
+
+            // 1. Prepara o relatório visualmente
+            renderPrint(); 
+            
+            // 2. Grava automaticamente na base de dados
+            const gravado = await handleExportSheet();
+            
+            // 3. Abre o diálogo de impressão
+            // Nota: Abrimos a impressão mesmo que a rede falhe para não parar a produção,
+            // mas o utilizador já viu a notificação de erro da gravação se for o caso.
+            window.print(); 
+        }
+
+        function handleDownloadOnly() {
+            let csv = "\uFEFFData;Código;Título;Trolleys;Grupo;Mat;ID;Comp;Quant;Total;Cortes;Obs\n";
+            projectData.groups.forEach(g => { g.items.forEach(it => { const row = [new Date().toLocaleDateString(), projectData.code, projectData.title, projectData.numTrolleys, g.id, g.description, it.subId, it.comp, it.quant, (it.comp * it.quant * projectData.numTrolleys), it.cuts, it.obs]; csv += row.join(";") + "\n"; }); });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${projectData.code || 'projeto'}_corte.csv`;
+            link.click();
+            showNotification('Exportado', 'Ficheiro CSV gerado com sucesso.', 'success');
+        }
+
+        async function deleteFromDB(idx) {
+            const r = dbRecords[idx];
+            const codigo = r.codigo;
+            
+            // Confirmação antes de apagar
+            if (!confirm(`Tem a certeza que quer apagar o projeto "${codigo}"?\n\nEsta ação é irreversível!`)) {
+                return;
+            }
+
+            try {
+                const payload = {
+                    action: 'delete',
+                    codigo: codigo
+                };
+
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
+                });
+
+                // Atualizar lista
+                showNotification('Projeto Apagado', `O projeto ${codigo} foi removido com sucesso.`, 'success');
+                fetchDatabaseData(); // Recarregar a tabela
+            } catch (err) {
+                showNotification('Erro', 'Falha ao apagar o projeto.', 'error');
+            }
+        }
+
+        function viewFromDB(idx) {
+            const r = dbRecords[idx];
+            const content = document.getElementById('view-modal-content');
+            
+            // Função para formatar data ISO para dd-mm-yyyy
+            function formatDate(isoDate) {
+                if (!isoDate || isoDate === '---') return '---';
+                const date = new Date(isoDate);
+                const day = String(date.getUTCDate()).padStart(2, '0');
+                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                const year = date.getUTCFullYear();
+                return `${day}-${month}-${year}`;
+            }
+            
+            const formattedDate = formatDate(r.data_registo);
+            document.getElementById('view-modal-code').innerText = `${r.codigo || '---'} • ${formattedDate}`;
+            
+            let materiaisHtml = '';
+            if (r.materiais && Array.isArray(r.materiais)) {
+                r.materiais.forEach((grupo, gIdx) => {
+                    materiaisHtml += `
+                        <div class="space-y-3">
+                            <div class="bg-blue-50 p-4 rounded-2xl border border-blue-200">
+                                <h4 class="font-black text-blue-600 mb-2">GRUPO ${grupo.grupo || String.fromCharCode(65 + gIdx)}</h4>
+                                <p class="text-sm font-bold text-slate-700">${grupo.descricao || 'N/A'}</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-xs">
+                                    <thead class="bg-slate-100 border-b border-slate-200">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left font-bold text-slate-600">ID</th>
+                                            <th class="px-3 py-2 text-center font-bold text-slate-600">Comp.</th>
+                                            <th class="px-3 py-2 text-center font-bold text-slate-600">Quant</th>
+                                            <th class="px-3 py-2 text-center font-bold text-slate-600">Cortes</th>
+                                            <th class="px-3 py-2 text-left font-bold text-slate-600">Observação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        ${(grupo.itens || []).map(it => `
+                                            <tr class="hover:bg-slate-50">
+                                                <td class="px-3 py-2 font-bold text-slate-700">${it.subId || '---'}</td>
+                                                <td class="px-3 py-2 text-center font-mono text-slate-600">${it.comp || '---'}</td>
+                                                <td class="px-3 py-2 text-center font-mono text-slate-600">${it.quant || '---'}</td>
+                                                <td class="px-3 py-2 text-center text-slate-600">${it.cuts || '---'}</td>
+                                                <td class="px-3 py-2 text-slate-500 italic">${it.obs || '---'}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Código</p>
+                            <p class="text-lg font-black text-slate-900">${r.codigo || '---'}</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Trolleys</p>
+                            <p class="text-lg font-black text-blue-600">${r.num_trolleys || 0}</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Título</p>
+                        <p class="text-base font-bold text-slate-700">${r.titulo || 'N/A'}</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Data de Registo</p>
+                        <p class="text-sm font-mono text-slate-600">${formatDate(r.data_registo)}</p>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <h4 class="font-black text-slate-900 mb-4 text-sm uppercase tracking-widest">Materiais</h4>
+                    <div class="space-y-6">
+                        ${materiaisHtml || '<p class="text-slate-500 italic">Sem dados de materiais</p>'}
+                    </div>
+                </div>
+            `;
+            
+            showViewModal();
+            lucide.createIcons();
+        }
+
+        function showViewModal() {
+            const modal = document.getElementById('view-modal');
+            const body = document.getElementById('view-modal-body');
+            modal.classList.remove('hidden');
+            setTimeout(() => body.classList.remove('scale-95', 'opacity-0'), 10);
+        }
+
+        function hideViewModal() {
+            const modal = document.getElementById('view-modal');
+            const body = document.getElementById('view-modal-body');
+            body.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function showNotification(title, msg, type) {
+            const n = document.getElementById('notification');
+            const icon = document.getElementById('notif-icon');
+            document.getElementById('notif-title').innerText = title;
+            document.getElementById('notif-message').innerText = msg;
+            icon.className = type === 'success' ? 'p-2.5 rounded-xl bg-emerald-50 text-emerald-600' : 'p-2.5 rounded-xl bg-red-50 text-red-600';
+            icon.innerHTML = type === 'success' ? '<i data-lucide="check-circle" class="w-6 h-6"></i>' : '<i data-lucide="alert-circle" class="w-6 h-6"></i>';
+            lucide.createIcons();
+            n.classList.add('show');
+            setTimeout(() => n.classList.remove('show'), 4000);
+        }
+
+        function showClearModal() { document.getElementById('clear-modal').classList.remove('hidden'); setTimeout(() => document.getElementById('clear-modal-body').classList.remove('scale-95', 'opacity-0'), 10); }
+        function hideClearModal() { document.getElementById('clear-modal-body').classList.add('scale-95', 'opacity-0'); setTimeout(() => document.getElementById('clear-modal').classList.add('hidden'), 300); }
+        function confirmClear() { projectData = { code: '', title: '', numTrolleys: 1, groups: [] }; updateInputFields(); render(); hideClearModal(); showNotification('Editor Limpo', 'Todos os dados foram reiniciados.', 'success'); }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>

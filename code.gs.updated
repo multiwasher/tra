@@ -1,0 +1,131 @@
+/**
+ * Trata pedidos POST (Gravação de dados com lógica de Upsert e Delete)
+ * Procura pelo Código do Projeto; se existir, apaga os registos antigos e grava os novos.
+ */
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Folha1");
+    
+    if (!sheet) {
+      return ContentService.createTextOutput("Erro: Folha1 não encontrada").setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    // --- AÇÃO: DELETE ---
+    if (data.action === 'delete') {
+      const codigoProjeto = data.codigo;
+      if (codigoProjeto) {
+        const values = sheet.getDataRange().getValues();
+        // Percorrer de baixo para cima para não desalinhar os índices ao apagar
+        for (let i = values.length - 1; i >= 1; i--) {
+          if (values[i][1] === codigoProjeto) { // Coluna B (índice 1) é o Código
+            sheet.deleteRow(i + 1);
+          }
+        }
+        return ContentService.createTextOutput("Projeto apagado com sucesso").setMimeType(ContentService.MimeType.TEXT);
+      }
+      return ContentService.createTextOutput("Erro: Código do projeto não fornecido").setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    // --- AÇÃO: UPSERT (padrão) ---
+    const codigoProjeto = data.codigo;
+
+    // Remover registos antigos do mesmo projeto
+    if (codigoProjeto) {
+      const values = sheet.getDataRange().getValues();
+      // Percorrer de baixo para cima para não desalinhar os índices ao apagar
+      for (let i = values.length - 1; i >= 1; i--) {
+        if (values[i][1] === codigoProjeto) { // Coluna B (índice 1) é o Código
+          sheet.deleteRow(i + 1);
+        }
+      }
+    }
+
+    // --- Gravar os novos dados ---
+    data.materiais.forEach(function(grupo) {
+      grupo.itens.forEach(function(item) {
+        sheet.appendRow([
+          data.data_registo, 
+          data.codigo, 
+          data.titulo, 
+          data.num_trolleys, 
+          grupo.grupo, 
+          grupo.descricao, 
+          item.subId, 
+          item.comp, 
+          item.quant, 
+          (parseFloat(item.quant) || 0) * (parseFloat(data.num_trolleys) || 0),
+          item.cuts,
+          item.obs
+        ]);
+      });
+    });
+    
+    return ContentService.createTextOutput("Sucesso").setMimeType(ContentService.MimeType.TEXT);
+      
+  } catch (error) {
+    return ContentService.createTextOutput("Erro: " + error.toString()).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+/**
+ * Trata pedidos GET (Consulta de dados)
+ */
+function doGet(e) {
+  const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "";
+  const callback = (e && e.parameter) ? e.parameter.callback : null;
+
+  if (action === "getList") {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Folha1");
+
+    if (!sheet) return createResponse_([], callback);
+
+    const rows = sheet.getDataRange().getValues();
+    if (rows.length <= 1) return createResponse_([], callback);
+
+    const projectsMap = {};
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const [data_registo, codigo, titulo, num_trolleys, grupoId, descricao, subId, comp, quant, total_quant, cuts, obs] = row;
+
+      // Usamos apenas o CÓDIGO como chave para garantir que o UI mostra apenas a versão mais recente
+      const projectKey = codigo;
+
+      if (!projectsMap[projectKey]) {
+        projectsMap[projectKey] = {
+          data_registo,
+          codigo,
+          titulo,
+          num_trolleys,
+          materiais: []
+        };
+      }
+
+      let group = projectsMap[projectKey].materiais.find(g => g.grupo === grupoId);
+      if (!group) {
+        group = { grupo: grupoId, descricao: descricao, itens: [] };
+        projectsMap[projectKey].materiais.push(group);
+      }
+
+      group.itens.push({ subId, comp, quant, cuts, obs });
+    }
+
+    const result = Object.values(projectsMap);
+    result.reverse(); 
+
+    return createResponse_(result, callback);
+  }
+
+  return createResponse_({ error: "Ação inválida" }, callback);
+}
+
+function createResponse_(data, callback) {
+  const json = JSON.stringify(data);
+  if (callback && /^[a-zA-Z_$][0-9a-zA-Z_$]*$/.test(callback)) {
+    return ContentService.createTextOutput(`${callback}(${json});`).setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+}
