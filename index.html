@@ -361,6 +361,13 @@
                 if (e.target.id === 'clear-modal') hideClearModal();
             });
 
+            // Previne mudanças de valor nos inputs number com as setas do teclado
+            document.addEventListener('keydown', (e) => {
+                if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.target.matches('input[type="number"]')) {
+                    e.preventDefault();
+                }
+            });
+
             document.getElementById('print-year').innerText = new Date().getFullYear();
             render();
         }
