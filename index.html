@@ -644,7 +644,7 @@
                         rows += `
                             <tr class="striped-row">
                                 <td class="text-center font-bold text-slate-400 italic">${it.lineNumber}</td>
-                                <td class="font-medium text-[9px]">${g.description}</td>
+                                <td class="font-medium text-[9px]">${it.descritivo || g.description}</td>
                                 <td class="text-center font-bold">${it.comp}</td>
                                 <td class="text-center">${it.quant}</td>
                                 <td class="text-center font-black text-blue-700">${q * num}</td>
@@ -659,7 +659,7 @@
                     table.className = 'mb-8 break-inside-avoid';
                     table.innerHTML = `
                         <div class="bg-slate-100 p-2 mb-1 border-l-4 border-blue-600 font-black text-xs uppercase">${g.id} - ${g.description}</div>
-                        <table><thead><tr><th>ID</th><th>Material</th><th>Comp.</th><th>Q/U</th><th>TOTAL</th><th>UN</th><th>Cortes</th><th>Obs.</th></tr></thead><tbody>${rows}</tbody></table>
+                        <table><thead><tr><th>ID</th><th>Descritivo</th><th>Comp.</th><th>Q/U</th><th>TOTAL</th><th>UN</th><th>Cortes</th><th>Obs.</th></tr></thead><tbody>${rows}</tbody></table>
                     `;
                     container.appendChild(table);
                 });
