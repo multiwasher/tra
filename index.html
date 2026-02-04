@@ -85,6 +85,11 @@
             -webkit-appearance: none;
             margin: 0;
         }
+
+        /* Grid 14 columns support */
+        .grid-cols-14 {
+            grid-template-columns: repeat(14, minmax(0, 1fr));
+        }
     </style>
 </head>
 <body class="text-slate-800">
@@ -523,7 +528,7 @@
         function addItem(gIdx) {
             const g = projectData.groups[gIdx];
             const maxLineNumber = g.items.length > 0 ? Math.max(...g.items.map(it => it.lineNumber || 0)) : 0;
-            g.items.push({ lineNumber: maxLineNumber + 1, comp: '', quant: '', cuts: '', obs: '', unit: 'mm' });
+            g.items.push({ lineNumber: maxLineNumber + 1, descritivo: '', comp: '', quant: '', cuts: '', obs: '', unit: 'mm' });
             render();
         }
 
@@ -561,12 +566,13 @@
                     g.items.forEach((it, iIdx) => {
                         gTotal += (parseFloat(it.comp) || 0) * (parseFloat(it.quant) || 0);
                         itemsHtml += `
-                            <div class="grid grid-cols-12 gap-3 items-center bg-slate-50 p-3 rounded-2xl border border-slate-100 group/item">
-                                <div class="col-span-1"><input type="number" value="${it.lineNumber}" oninput="updateItem(${gIdx}, ${iIdx}, 'lineNumber', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-center outline-none focus:border-blue-500"></div>
-                                <div class="col-span-2"><input type="number" value="${it.comp}" oninput="updateItem(${gIdx}, ${iIdx}, 'comp', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
-                                <div class="col-span-2"><input type="number" value="${it.quant}" oninput="updateItem(${gIdx}, ${iIdx}, 'quant', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
-                                <div class="col-span-2"><input type="text" value="${it.cuts}" oninput="updateItem(${gIdx}, ${iIdx}, 'cuts', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-blue-500"></div>
-                                <div class="col-span-4"><input type="text" value="${it.obs}" oninput="updateItem(${gIdx}, ${iIdx}, 'obs', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="Nota..."></div>
+                            <div class="grid grid-cols-14 gap-2 items-center bg-slate-50 p-3 rounded-2xl border border-slate-100 group/item">
+                                <div class="col-span-1"><input type="number" value="${it.lineNumber}" oninput="updateItem(${gIdx}, ${iIdx}, 'lineNumber', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs font-bold text-center outline-none focus:border-blue-500"></div>
+                                <div class="col-span-3"><input type="text" value="${it.descritivo || ''}" oninput="updateItem(${gIdx}, ${iIdx}, 'descritivo', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs font-bold outline-none focus:border-blue-500" placeholder="Desc..."></div>
+                                <div class="col-span-1"><input type="number" value="${it.comp}" oninput="updateItem(${gIdx}, ${iIdx}, 'comp', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs font-bold outline-none focus:border-blue-500"></div>
+                                <div class="col-span-1"><input type="number" value="${it.quant}" oninput="updateItem(${gIdx}, ${iIdx}, 'quant', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs font-bold outline-none focus:border-blue-500"></div>
+                                <div class="col-span-1"><input type="text" value="${it.cuts}" oninput="updateItem(${gIdx}, ${iIdx}, 'cuts', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs font-bold outline-none focus:border-blue-500"></div>
+                                <div class="col-span-6"><input type="text" value="${it.obs}" oninput="updateItem(${gIdx}, ${iIdx}, 'obs', this.value)" class="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs outline-none focus:border-blue-500" placeholder="Obs..."></div>
                                 <div class="col-span-1 flex justify-center"><button onclick="removeItem(${gIdx}, ${iIdx})" class="text-slate-300 hover:text-red-500 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button></div>
                             </div>
                         `;
@@ -595,12 +601,13 @@
                                 <span id="total-g-${gIdx}" class="text-xl font-black text-slate-900 tracking-tight">${(gTotal/1000).toFixed(2)} m</span>
                             </div>
                         </div>
-                        <div class="grid grid-cols-12 gap-3 mb-3 px-3">
+                        <div class="grid grid-cols-14 gap-2 mb-3 px-3">
                             <div class="col-span-1"></div>
-                            <div class="col-span-2 text-xs font-black uppercase text-slate-400 text-center">Compr.</div>
-                            <div class="col-span-2 text-xs font-black uppercase text-slate-400 text-center">Quant.</div>
-                            <div class="col-span-2 text-xs font-black uppercase text-slate-400 text-center">Cortes</div>
-                            <div class="col-span-4 text-xs font-black uppercase text-slate-400 text-center">Obs.</div>
+                            <div class="col-span-3 text-xs font-black uppercase text-slate-400 text-center">Descritivo</div>
+                            <div class="col-span-1 text-xs font-black uppercase text-slate-400 text-center">Comp.</div>
+                            <div class="col-span-1 text-xs font-black uppercase text-slate-400 text-center">Quant.</div>
+                            <div class="col-span-1 text-xs font-black uppercase text-slate-400 text-center">Cortes</div>
+                            <div class="col-span-6 text-xs font-black uppercase text-slate-400 text-center">Obs.</div>
                             <div class="col-span-1"></div>
                         </div>
                         <div class="space-y-3">${itemsHtml}</div>

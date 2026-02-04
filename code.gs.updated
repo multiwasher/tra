@@ -52,7 +52,8 @@ function doPost(e) {
           data.num_trolleys, 
           grupo.grupo, 
           grupo.descricao, 
-          item.lineNumber, 
+          item.lineNumber,
+          item.descritivo,
           item.comp, 
           item.quant, 
           (parseFloat(item.quant) || 0) * (parseFloat(data.num_trolleys) || 0),
@@ -89,7 +90,7 @@ function doGet(e) {
 
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      const [data_registo, codigo, titulo, num_trolleys, grupoId, descricao, lineNumber, comp, quant, total_quant, cuts, obs] = row;
+      const [data_registo, codigo, titulo, num_trolleys, grupoId, descricao, lineNumber, descritivo, comp, quant, total_quant, cuts, obs] = row;
 
       // Usamos apenas o CÓDIGO como chave para garantir que o UI mostra apenas a versão mais recente
       const projectKey = codigo;
@@ -110,7 +111,7 @@ function doGet(e) {
         projectsMap[projectKey].materiais.push(group);
       }
 
-      group.itens.push({ lineNumber, comp, quant, cuts, obs });
+      group.itens.push({ lineNumber, descritivo, comp, quant, cuts, obs });
     }
 
     const result = Object.values(projectsMap);
