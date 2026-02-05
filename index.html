@@ -821,6 +821,7 @@
                                             <th class="px-3 py-2 text-center font-bold text-slate-600">Comp.</th>
                                             <th class="px-3 py-2 text-center font-bold text-slate-600">Quant</th>
                                             <th class="px-3 py-2 text-center font-bold text-slate-600">Cortes</th>
+                                            <th class="px-3 py-2 text-left font-bold text-slate-600">Descritivo</th>
                                             <th class="px-3 py-2 text-left font-bold text-slate-600">Observação</th>
                                         </tr>
                                     </thead>
@@ -831,6 +832,7 @@
                                                 <td class="px-3 py-2 text-center font-mono text-slate-600">${it.comp || '---'}</td>
                                                 <td class="px-3 py-2 text-center font-mono text-slate-600">${it.quant || '---'}</td>
                                                 <td class="px-3 py-2 text-center text-slate-600">${it.cuts || '---'}</td>
+                                                <td class="px-3 py-2 text-slate-500 italic">${it.descritivo || '---'}</td>
                                                 <td class="px-3 py-2 text-slate-500 italic">${it.obs || '---'}</td>
                                             </tr>
                                         `).join('')}
