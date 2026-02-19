@@ -40,7 +40,7 @@
             td { padding: 6px 4px; border-bottom: 1px solid #e2e8f0; font-size: 10px; }
             .corner-img-tl { position: absolute; top: 0; left: 0; height: 45px; }
             .corner-img-tr { position: absolute; top: 0; right: 0; height: 50px; }
-            .corner-img-br { position: fixed; bottom: 0; right: 0; height: 35px; }
+            .corner-img-br { position: absolute; bottom: 0; right: 0; height: 35px; }
             .header-spacer { height: 60px; }
             .project-header { border-bottom: 2px solid var(--brand-blue); padding-bottom: 8px; margin-bottom: 20px; }
             .break-inside-avoid { break-inside: avoid; }
@@ -291,7 +291,6 @@
     <div id="print-sheet" class="hidden print-block bg-white w-full mx-auto relative min-h-screen">
         <img src="https://static.wixstatic.com/media/a6967f_eee0d017524f4a48bf2870cc2385c10b~mv2.png" class="corner-img-tl">
         <img src="https://static.wixstatic.com/media/a6967f_d83f45c5e4f446009fcfd984d5d85f6f~mv2.png" class="corner-img-tr">
-        <img src="https://static.wixstatic.com/media/a6967f_0db968f0a9864debae3bd716ad0ebeb6~mv2.png" class="corner-img-br">
         <div class="header-spacer"></div>
         <div id="print-code-large" class="text-center font-black text-5xl tracking-tighter mb-4 text-slate-900 italic"></div>
         <div class="project-header border-b-2 border-slate-900 pb-2 mb-6 flex justify-between items-end">
@@ -303,7 +302,7 @@
         </div>
         <div id="print-tables-container"></div>
         <div id="print-summary-container"></div>
-        <footer class="mt-12 pt-6 text-[9px] text-slate-400 text-center uppercase tracking-[0.3em] border-t border-slate-100">
+        <footer class="mt-4 pt-2 text-[6px] text-slate-400 text-center uppercase tracking-[0.2em] border-t border-slate-100">
             Confidencial Somengil &copy; <span id="print-year"></span> - Instruções Técnicas de Corte
         </footer>
     </div>
