@@ -465,6 +465,7 @@
                     <td class="px-8 py-5 flex justify-center gap-2">
                         <button onclick="viewFromDB(${idx}); event.stopPropagation();" class="p-2 bg-slate-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Visualizar"><i data-lucide="eye" class="w-4 h-4"></i></button>
                         <button onclick="loadFromDB(${idx}); event.stopPropagation();" class="p-2 bg-blue-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Editar"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                        <button onclick="duplicateFromDB(${idx}); event.stopPropagation();" class="p-2 bg-amber-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Duplicar"><i data-lucide="copy" class="w-4 h-4"></i></button>
                         <button onclick="deleteFromDB(${idx}); event.stopPropagation();" class="p-2 bg-red-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Apagar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </td>
                 `;
@@ -786,6 +787,30 @@
             } catch (err) {
                 showNotification('Erro', 'Falha ao apagar o projeto.', 'error');
             }
+        }
+
+        async function duplicateFromDB(idx) {
+            const r = dbRecords[idx];
+            const codigoOriginal = r.codigo;
+            const novoCodigoBase = codigoOriginal + '_1';
+            
+            // Carregar os dados do registro original
+            projectData = {
+                code: novoCodigoBase, 
+                title: r.titulo || '', 
+                numTrolleys: parseInt(r.num_trolleys) || 1,
+                groups: (r.materiais || []).map((g, i) => ({
+                    id: g.grupo || String.fromCharCode(65 + i),
+                    description: g.descricao || '',
+                    isCustom: !MATERIAL_OPTIONS.includes(g.descricao),
+                    items: (g.itens || []).map(it => ({ ...it, unit: 'mm' }))
+                }))
+            };
+            
+            updateInputFields();
+            render();
+            switchView('editor');
+            showNotification('Projeto Duplicado', `Código alterado para "${novoCodigoBase}". Grave para criar a cópia.`, 'success');
         }
 
         function viewFromDB(idx) {
