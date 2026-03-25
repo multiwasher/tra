@@ -279,7 +279,7 @@
                     <tbody id="db-body" class="divide-y divide-slate-50 text-sm font-medium text-slate-600"></tbody>
                 </table>
             </div>
-            <div id="db-loader" class="hidden flex flex-col items-center justify-center py-24 text-slate-400">
+            <div id="db-loader" class="hidden pointer-events-none flex flex-col items-center justify-center py-24 text-slate-400">
                 <div class="loader mb-4"></div>
                 <p class="font-bold">A aceder à Nuvem Somengil...</p>
             </div>
@@ -416,7 +416,6 @@
                 navE.classList.remove('active-tab');
                 navD.classList.add('active-tab');
                 navD.classList.remove('text-white');
-                fetchDatabaseData();
             }
             lucide.createIcons();
         }
@@ -441,17 +440,47 @@
             const loader = document.getElementById('db-loader');
             const icon = document.getElementById('refresh-icon');
             loader.classList.remove('hidden');
-            icon.classList.add('animate-spin');
+            
+            // Timeout de segurança
+            const timeoutId = setTimeout(() => {
+                loader.classList.add('hidden');
+                showNotification('Timeout', 'A conexão demorou demasiado. Tente novamente.', 'error');
+            }, 15000);
+            
             try {
                 const data = await getListJSONP();
+                clearTimeout(timeoutId);
                 dbRecords = Array.isArray(data) ? data : [];
                 renderDatabase(dbRecords);
             } catch (err) {
+                clearTimeout(timeoutId);
                 showNotification('Erro', 'Não foi possível ler os dados.', 'error');
             } finally {
                 loader.classList.add('hidden');
-                icon.classList.remove('animate-spin');
             }
+        }
+
+        function filterDatabase() {
+            const searchTerm = document.getElementById('db-search').value.toLowerCase().trim();
+            
+            if (!searchTerm) {
+                // Se não há termo de busca, mostra todos os registos
+                renderDatabase(dbRecords);
+                return;
+            }
+            
+            // Filtra por código, título ou data
+            const filtered = dbRecords.filter(rec => {
+                const codigo = (rec.codigo || '').toLowerCase();
+                const titulo = (rec.titulo || '').toLowerCase();
+                const data = (rec.data_registo || '').toLowerCase();
+                
+                return codigo.includes(searchTerm) || 
+                       titulo.includes(searchTerm) || 
+                       data.includes(searchTerm);
+            });
+            
+            renderDatabase(filtered);
         }
 
         function renderDatabase(data) {
