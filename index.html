@@ -490,14 +490,14 @@
         }
 
         function quickFilterDB(prefix) {
-
-        function clearFilterDB() {
-            const searchInput = document.getElementById("db-search");
-            searchInput.value = "";
-            filterDatabase();
-        }
             const searchInput = document.getElementById('db-search');
             searchInput.value = prefix;
+            filterDatabase();
+        }
+
+        function clearFilterDB() {
+            const searchInput = document.getElementById('db-search');
+            searchInput.value = '';
             filterDatabase();
         }
 
