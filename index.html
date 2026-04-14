@@ -255,6 +255,11 @@
                     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
                     <input type="text" id="db-search" placeholder="Procurar projeto..." oninput="filterDatabase()" class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 transition-all">
                 </div>
+                <div class="flex gap-2">
+                    <button onclick="quickFilterDB('TRA')" class="px-4 py-3.5 bg-blue-100 text-blue-700 font-semibold rounded-2xl hover:bg-blue-200 transition-colors shadow-sm border border-blue-200" title="Filtrar TRA">TRA</button>
+                    <button onclick="quickFilterDB('TRB')" class="px-4 py-3.5 bg-green-100 text-green-700 font-semibold rounded-2xl hover:bg-green-200 transition-colors shadow-sm border border-green-200" title="Filtrar TRB">TRB</button>
+                    <button onclick="quickFilterDB('ARA')" class="px-4 py-3.5 bg-orange-100 text-orange-700 font-semibold rounded-2xl hover:bg-orange-200 transition-colors shadow-sm border border-orange-200" title="Filtrar ARA">ARA</button>
+                </div>
                 <a href="https://docs.google.com/spreadsheets/d/1HEud_3ANzY9F9SIKVjgcbThP1d7jTA9QOzap5ETsd9Y/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="p-3.5 bg-blue-600 text-white rounded-2xl shadow-lg hover:bg-blue-700 transition-colors" title="Abrir Google Sheets original">
                     <i data-lucide="external-link" class="w-5 h-5"></i>
                 </a>
@@ -481,6 +486,12 @@
             });
             
             renderDatabase(filtered);
+        }
+
+        function quickFilterDB(prefix) {
+            const searchInput = document.getElementById('db-search');
+            searchInput.value = prefix;
+            filterDatabase();
         }
 
         function renderDatabase(data) {
