@@ -501,7 +501,7 @@
                         <button onclick="deleteFromDB(${dbRecords.findIndex(r => r.codigo === rec.codigo)}); event.stopPropagation();" class="p-2 bg-red-600 text-white rounded-lg shadow-md hover:scale-110 transition-transform" title="Apagar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </td>
                 `;
-                tr.onclick = () => loadFromDB(idx);
+                tr.onclick = () => loadFromDB(dbRecords.findIndex(r => r.codigo === rec.codigo));
                 body.appendChild(tr);
             });
             lucide.createIcons();
